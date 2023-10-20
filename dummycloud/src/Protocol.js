@@ -2,6 +2,7 @@ const Logger = require("./Logger");
 const {getKeyByValue, truncateToNullTerminator} = require("./util");
 
 const HEADER_LEN = 11;
+//const HEADER_LEN = 28;
 const FOOTER_LEN = 2;
 
 class Protocol {
@@ -13,7 +14,7 @@ class Protocol {
             type: buf[4],
             msgIDResponse: buf[5],
             msgIDRequest: buf[6],
-            loggerSerial: buf.readUint32LE(7)
+            loggerSerial: buf.readUint32LE(7),
         };
 
         if (result.magic !== 0xa5) {
@@ -72,82 +73,32 @@ class Protocol {
         //TODO: there's a lot more in this packet
 
         return {
-            pv: {
-                "1": {
-                    v: packet.payload.readUInt16LE(85) / 10,
-                    i: packet.payload.readUInt16LE(87) / 10,
-
-                    w: parseFloat(((packet.payload.readUInt16LE(85) / 10) * (packet.payload.readUInt16LE(87) / 10)).toFixed(2)),
-
-                    kWh_today: packet.payload.readUInt16LE(136) / 10,
-                    kWh_total: packet.payload.readUInt16BE(145) / 10,
-                },
-                "2": {
-                    v: packet.payload.readUInt16LE(89) / 10,
-                    i: packet.payload.readUInt16LE(91) / 10,
-
-                    w: parseFloat(((packet.payload.readUInt16LE(89) / 10) * (packet.payload.readUInt16LE(91) / 10)).toFixed(2)),
-
-                    kWh_today: packet.payload.readUInt16LE(138) / 10,
-                    kWh_total: packet.payload.readUInt16BE(149) / 10,
-                },
-                "3": {
-                    v: packet.payload.readUInt16LE(93) / 10,
-                    i: packet.payload.readUInt16LE(95) / 10,
-
-                    w: parseFloat(((packet.payload.readUInt16LE(93) / 10) * (packet.payload.readUInt16LE(95) / 10)).toFixed(2)),
-
-                    kWh_today: packet.payload.readUInt16LE(140) / 10,
-                    kWh_total: packet.payload.readUInt16BE(153) / 10,
-                },
-                "4": {
-                    v: packet.payload.readUInt16LE(97) / 10,
-                    i: packet.payload.readUInt16LE(99) / 10,
-
-                    w: parseFloat(((packet.payload.readUInt16LE(97) / 10) * (packet.payload.readUInt16LE(99) / 10)).toFixed(2)),
-
-                    kWh_today: packet.payload.readUInt16LE(142) / 10,
-                    kWh_total: packet.payload.readUInt16BE(157) / 10,
-                },
-            },
-            grid: {
-                active_power_w: packet.payload.readUInt32LE(59),
-
-                kWh_today: packet.payload.readUInt32LE(33) / 100,
-                kWh_total: packet.payload.readUInt32LE(37) / 10,
-
-                v: packet.payload.readUInt16LE(45) / 10,
-                i: packet.payload.readUInt16LE(51) / 10,
-
-                hz: packet.payload.readUInt16LE(57) / 100,
-
-            },
-            inverter: {
-                radiator_temp_celsius: packet.payload.readInt16LE(63) / 100, //TODO: is this actually a signed int?
-            },
-            inverter_meta: {
-                rated_power_w: packet.payload.readUInt16BE(129) / 10,
-                mppt_count: packet.payload.readInt8(131),
-
-                startup_self_check_time: packet.payload.readUInt16BE(243),
-                current_time: Protocol.parseTime(packet.payload.subarray(245, 251)),
-
-
-                grid_freq_hz_overfreq_load_reduction_starting_point: packet.payload.readUInt16BE(223) / 100,
-                grid_overfreq_load_reduction_percent: packet.payload.readUInt16BE(225),
-
-                grid_v_limit_upper: packet.payload.readUInt16BE(235) / 10,
-                grid_v_limit_lower: packet.payload.readUInt16BE(237) / 10,
-                grid_freq_hz_limit_upper: packet.payload.readUInt16BE(239) / 100,
-                grid_freq_hz_limit_lower: packet.payload.readUInt16BE(241) / 100,
-
-                protocol_ver: packet.payload.subarray(101, 109).toString("ascii"),
-                dc_master_fw_ver: packet.payload.subarray(109, 117).toString("ascii"),
-                ac_fw_ver: packet.payload.subarray(117, 125).toString("ascii"),
-            },
-
+            frameType: packet.payload[0],
+            sensorType: packet.payload[1],
+            total_working_time: packet.payload.readUInt32BE(3),
+            power_on_time: packet.payload.readUInt32BE(7),
+            offset_time: packet.payload.readUInt32BE(11),
+            timestamp: new Date((packet.payload.readUInt32BE(3)+packet.payload.readUInt32BE(11))*1000),          
+            //10 bytes unknown,
+            inverter_serial: truncateToNullTerminator(packet.payload.subarray(25, 25+10).toString("ascii")),
+            //6 bytes constant unknown
+            some_string: truncateToNullTerminator(packet.payload.subarray(41, 41+28).toString("ascii")),
+            battery_charge_today: packet.payload.readInt16BE(41+28+(13*2))/10.0,
+            battery_discharge_today: packet.payload.readInt16BE(41+28+(14*2))/10.0,
+            battery_charge_total: packet.payload.readInt32BE(41+28+(15*2))/10.0,
+            battery_discharge_total: packet.payload.readInt32BE(41+28+(17*2))/10.0,
+            today_bought_from_grid: packet.payload.readInt16BE(41+28+(19*2))/10.0, 
+            today_sold_to_grid: packet.payload.readInt16BE(41+28+(20*2))/10.0, 
+            total_bought_from_grid: packet.payload.readInt32BE(41+28+(21*2))/10.0, 
+            total_sold_to_grid: packet.payload.readInt32BE(41+28+(23*2))/10.0, 
+            today_to_load: packet.payload.readInt16BE(41+28+(25*2))/10.0, 
+            total_to_load: packet.payload.readInt32BE(41+28+(26*2))/10.0, 
+            today_from_pv: packet.payload.readInt16BE(41+28+(28*2))/10.0, 
+            today_from_pv1: packet.payload.readInt16BE(41+28+(29*2))/10.0, 
+            today_from_pv2: packet.payload.readInt16BE(41+28+(30*2))/10.0, 
+            total_from_pv: packet.payload.readInt32BE(41+28+(33*2))/10.0, 
+            
             //for some reason everything after byte ~120 is all BE compared to the above?
-
         };
     }
 

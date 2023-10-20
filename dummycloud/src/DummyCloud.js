@@ -2,6 +2,7 @@ const EventEmitter = require("events").EventEmitter;
 const Logger = require("./Logger");
 const net = require("net");
 const Protocol = require("./Protocol");
+const fs = require('fs');
 
 class DummyCloud {
     constructor() {
@@ -30,10 +31,12 @@ class DummyCloud {
         socket.on("data", (data) => {
             Logger.trace(new Date().toISOString(), `Data received from client: ${data.toString()}`);
             Logger.trace(new Date().toISOString(), "Data", data.toString("hex"));
+            fs.appendFile("datahex.txt",new Date().toISOString()+"|"+data.toString("hex")+"\n",err=>{if (err){ Logger.warn(err) }} );
 
             try {
                 const packet = Protocol.parsePacket(data);
                 let response;
+                Logger.trace(' header: ', packet.header);
 
                 switch (packet.header.type) {
                     case Protocol.MESSAGE_REQUEST_TYPES.HEARTBEAT: {

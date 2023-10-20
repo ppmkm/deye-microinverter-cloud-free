@@ -61,6 +61,7 @@ class MqttClient {
     }
 
     handleData(data) {
+/*	
         this.ensureAutoconf(data.header.loggerSerial.toString(), data.payload.inverter_meta.mppt_count);
         const baseTopic = `${MqttClient.TOPIC_PREFIX}/${data.header.loggerSerial.toString()}`;
 
@@ -101,6 +102,7 @@ class MqttClient {
         this.client.publish(`${baseTopic}/grid/hz`, data.payload.grid.hz.toString());
 
         this.client.publish(`${baseTopic}/inverter/radiator_temperature`, data.payload.inverter.radiator_temp_celsius.toString());
+    */
     }
 
     ensureAutoconf(loggerSerial, mpptCount) {
