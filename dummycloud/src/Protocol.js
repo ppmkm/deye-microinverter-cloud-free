@@ -97,7 +97,35 @@ class Protocol {
             today_from_pv1: packet.payload.readInt16BE(41+28+(29*2))/10.0, 
             today_from_pv2: packet.payload.readInt16BE(41+28+(30*2))/10.0, 
             total_from_pv: packet.payload.readInt32BE(41+28+(33*2))/10.0, 
+            unkn35: packet.payload.readInt32BE(41+28+(35*2))/10.0,
+            batt_temp: packet.payload.readInt16BE(41+28+(52*2))/10.0,
+            batt_voltage: packet.payload.readInt16BE(41+28+(53*2))/100.0,
+            batt_soc_pct: packet.payload.readInt16BE(41+28+(54*2)),
+            unkn55: packet.payload.readInt16BE(41+28+(55*2)),
+            batt_out_power: packet.payload.readInt16BE(41+28+(56*2)),
+			batt_out_current: packet.payload.readInt16BE(41+28+(57*2))/100.0,            
+            batt_corr_ah: packet.payload.readInt16BE(41+28+(58*2)),
+            grid_phasea_volt: packet.payload.readInt16BE(41+28+(59*2))/10.0,
+            grid_phaseb_volt: packet.payload.readInt16BE(41+28+(60*2))/10.0,
+            grid_phasec_volt: packet.payload.readInt16BE(41+28+(61*2))/10.0,
+            grid_phaseab_volt: packet.payload.readInt16BE(41+28+(62*2))/10.0,
+            grid_phasebc_volt: packet.payload.readInt16BE(41+28+(63*2))/10.0,
+            grid_phaseca_volt: packet.payload.readInt16BE(41+28+(64*2))/10.0,
+            grid_phasea_power_in: packet.payload.readInt16BE(41+28+(65*2)),
+            grid_phaseb_power_in: packet.payload.readInt16BE(41+28+(66*2)),
+            grid_phasec_power_in: packet.payload.readInt16BE(41+28+(67*2)),
+            grid_active_power_in: packet.payload.readInt16BE(41+28+(68*2)),
+            grid_active_apparent_power: packet.payload.readInt16BE(41+28+(69*2)),
+            grid_freq: packet.payload.readInt16BE(41+28+(70*2))/100.0,
+            grid_phasea_current_in: packet.payload.readInt16BE(41+28+(71*2))/100.0,
+            grid_phaseb_current_in: packet.payload.readInt16BE(41+28+(72*2))/100.0,
+            grid_phasec_current_in: packet.payload.readInt16BE(41+28+(73*2))/100.0,
+            grid_phasea_current_outg: packet.payload.readInt16BE(41+28+(74*2))/100.0,
+            grid_phaseb_current_outg: packet.payload.readInt16BE(41+28+(75*2))/100.0,
+            grid_phasec_current_outg: packet.payload.readInt16BE(41+28+(76*2))/100.0,
             
+
+
             //for some reason everything after byte ~120 is all BE compared to the above?
         };
     }
