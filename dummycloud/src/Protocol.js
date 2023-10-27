@@ -123,8 +123,29 @@ class Protocol {
             grid_phasea_current_outg: packet.payload.readInt16BE(41+28+(74*2))/100.0,
             grid_phaseb_current_outg: packet.payload.readInt16BE(41+28+(75*2))/100.0,
             grid_phasec_current_outg: packet.payload.readInt16BE(41+28+(76*2))/100.0,
-            
-
+            grid_phasea_power_outg: packet.payload.readInt16BE(41+28+(77*2)),
+            grid_phaseb_power_outg: packet.payload.readInt16BE(41+28+(78*2)),
+            grid_phasec_power_outg: packet.payload.readInt16BE(41+28+(79*2)),
+            grid_total_power_outg: packet.payload.readInt16BE(41+28+(80*2)),
+            grid_total_apparent_power_outg: packet.payload.readInt16BE(41+28+(81*2)),
+            unkn82:packet.payload.readInt16BE(41+28+(82*2)),
+            grid_phasea_power: packet.payload.readInt16BE(41+28+(83*2)),
+            grid_phaseb_power: packet.payload.readInt16BE(41+28+(84*2)),
+            grid_phasec_power: packet.payload.readInt16BE(41+28+(85*2)),
+            grid_total_power: packet.payload.readInt16BE(41+28+(86*2)),
+            unkn87:packet.payload.readInt16BE(41+28+(87*2)),
+            grid_phasea_volt_out: packet.payload.readInt16BE(41+28+(88*2))/10.0,
+            grid_phaseb_volt_out: packet.payload.readInt16BE(41+28+(89*2))/10.0,
+            grid_phasec_volt_out: packet.payload.readInt16BE(41+28+(90*2))/10.0,
+            inv_phasea_current_out: packet.payload.readInt16BE(41+28+(91*2))/100.0,
+            inv_phaseb_current_out: packet.payload.readInt16BE(41+28+(92*2))/100.0,
+            inv_phasec_current_out: packet.payload.readInt16BE(41+28+(93*2))/100.0,
+            inv_phasea_power_out: packet.payload.readInt16BE(41+28+(94*2)),
+            inv_phaseb_power_out: packet.payload.readInt16BE(41+28+(95*2)),
+            inv_phasec_power_out: packet.payload.readInt16BE(41+28+(96*2)),
+            inv_total_power_out: packet.payload.readInt16BE(41+28+(97*2)),
+            inv_total_apparent_power_outg: packet.payload.readInt16BE(41+28+(98*2)),
+            inv_freq: packet.payload.readInt16BE(41+28+(99*2))/100.0,
 
             //for some reason everything after byte ~120 is all BE compared to the above?
         };
