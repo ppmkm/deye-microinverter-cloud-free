@@ -61,10 +61,21 @@ class MqttClient {
     }
 
     handleData(data) {
-/*	
+	
+		
         this.ensureAutoconf(data.header.loggerSerial.toString(), data.payload.inverter_meta.mppt_count);
         const baseTopic = `${MqttClient.TOPIC_PREFIX}/${data.header.loggerSerial.toString()}`;
 
+            this.client.publish(`${baseTopic}/pv/1/v`, data.payload.pv1_volt.toString());
+            this.client.publish(`${baseTopic}/pv/1/i`, data.payload.pv1_current.toString());
+            this.client.publish(`${baseTopic}/pv/1/w`, data.payload.pv1_in_power.toString());
+            this.client.publish(`${baseTopic}/pv/2/v`, data.payload.pv2_volt.toString());
+            this.client.publish(`${baseTopic}/pv/2/i`, data.payload.pv2_current.toString());
+            this.client.publish(`${baseTopic}/pv/2/w`, data.payload.pv2_in_power.toString());
+            this.client.publish(`${baseTopic}/pv/kWh_total`, data.payload.total_from_pv.toString(),{retain: true});
+            this.client.publish(`${baseTopic}/pv/kWh_today`, data.payload.today_from_pv.toString(),{retain: true});
+            this.client.publish(`${baseTopic}/grid/active_power_w`, data.payload.grid_total_power_outg.toString());
+/*
         for (let i = 1; i <= data.payload.inverter_meta.mppt_count; i++) {
             this.client.publish(`${baseTopic}/pv/${i}/v`, data.payload.pv[`${i}`].v.toString());
             this.client.publish(`${baseTopic}/pv/${i}/i`, data.payload.pv[`${i}`].i.toString());
@@ -83,14 +94,27 @@ class MqttClient {
                 );
             }
         }
-
-        this.client.publish(`${baseTopic}/grid/active_power_w`, data.payload.grid.active_power_w.toString());
-
+*/
+//        this.client.publish(`${baseTopic}/grid/active_power_w`, data.payload.grid.active_power_w.toString());
+        this.client.publish(
+            `${baseTopic}/grid/kWh_today`,
+            data.payload.today_bought_from_grid.toString(),
+            {retain: true}
+        );
+/*
         this.client.publish(
             `${baseTopic}/grid/kWh_today`,
             data.payload.grid.kWh_today.toString(),
             {retain: true}
         );
+*/
+            this.client.publish(
+                `${baseTopic}/grid/kWh_total`,
+                data.payload.total_bought_from_grid.toString(),
+                {retain: true}
+            );
+
+/*        
         if (data.payload.grid.kWh_total > 0) {
             this.client.publish(
                 `${baseTopic}/grid/kWh_total`,
@@ -98,11 +122,15 @@ class MqttClient {
                 {retain: true}
             );
         }
-        this.client.publish(`${baseTopic}/grid/v`, data.payload.grid.v.toString());
-        this.client.publish(`${baseTopic}/grid/hz`, data.payload.grid.hz.toString());
+*/      
 
+        this.client.publish(`${baseTopic}/grid/va`, data.payload.grid_phasea_volt.toString());
+        this.client.publish(`${baseTopic}/grid/vb`, data.payload.grid_phaseb_volt.toString());
+        this.client.publish(`${baseTopic}/grid/vc`, data.payload.grid_phasec_volt.toString());
+        this.client.publish(`${baseTopic}/grid/hz`, data.payload.grid_freq.toString());
+/*
         this.client.publish(`${baseTopic}/inverter/radiator_temperature`, data.payload.inverter.radiator_temp_celsius.toString());
-    */
+*/        
     }
 
     ensureAutoconf(loggerSerial, mpptCount) {
@@ -113,8 +141,8 @@ class MqttClient {
         const baseTopic = `${MqttClient.TOPIC_PREFIX}/${loggerSerial.toString()}`;
         const device = {
             "manufacturer":"Deye",
-            "model":"Microinverter",
-            "name":`Deye Microinverter ${loggerSerial}`,
+            "model":"Hybrid3Phase",
+            "name":`Deye Hybrid Inverter ${loggerSerial}`,
             "identifiers":[
                 `deye_dummycloud_${loggerSerial}`
             ]
@@ -170,37 +198,38 @@ class MqttClient {
                 {retain: true}
             );
 
+        }//for mppt count
+
             this.client.publish(
-                `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_pv${i}_kWh_today/config`,
+                `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_pv_kWh_today/config`,
                 JSON.stringify({
-                    "state_topic": `${baseTopic}/pv/${i}/kWh_today`,
-                    "name":`PV ${i} Energy Today`,
+                    "state_topic": `${baseTopic}/pv/kWh_today`,
+                    "name":`PV Energy Today`,
                     "unit_of_measurement": "kWh",
                     "device_class": "energy",
                     "state_class": "total_increasing",
-                    "object_id": `deye_dummycloud_${loggerSerial}_pv_${i}_kWh_today`,
-                    "unique_id": `deye_dummycloud_${loggerSerial}_pv_${i}_kWh_today`,
-                    "enabled_by_default": i < 3,
+                    "object_id": `deye_dummycloud_${loggerSerial}_pv_kWh_today`,
+                    "unique_id": `deye_dummycloud_${loggerSerial}_pv_kWh_today`,
+                    "enabled_by_default": true,
                     "device": device
                 }),
                 {retain: true}
             );
             this.client.publish(
-                `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_pv${i}_kWh_total/config`,
+                `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_pv_kWh_total/config`,
                 JSON.stringify({
-                    "state_topic": `${baseTopic}/pv/${i}/kWh_total`,
-                    "name":`PV ${i} Energy Total`,
+                    "state_topic": `${baseTopic}/pv/kWh_total`,
+                    "name":`PV Energy Total`,
                     "unit_of_measurement": "kWh",
                     "device_class": "energy",
                     "state_class": "total_increasing",
-                    "object_id": `deye_dummycloud_${loggerSerial}_pv_${i}_kWh_total`,
-                    "unique_id": `deye_dummycloud_${loggerSerial}_pv_${i}_kWh_total`,
-                    "enabled_by_default": i < 3,
+                    "object_id": `deye_dummycloud_${loggerSerial}_pv_kWh_total`,
+                    "unique_id": `deye_dummycloud_${loggerSerial}_pv_kWh_total`,
+                    "enabled_by_default": true,
                     "device": device
                 }),
                 {retain: true}
             );
-        }
 
 
         this.client.publish(
@@ -247,20 +276,55 @@ class MqttClient {
             {retain: true}
         );
         this.client.publish(
-            `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_grid_v/config`,
+            `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_grid_va/config`,
             JSON.stringify({
-                "state_topic": `${baseTopic}/grid/v`,
-                "name":"Grid Voltage",
+                "state_topic": `${baseTopic}/grid/va`,
+                "name":"Phase A Grid Voltage",
                 "unit_of_measurement": "V",
                 "device_class": "voltage",
                 "state_class": "measurement",
-                "object_id": `deye_dummycloud_${loggerSerial}_grid_v`,
-                "unique_id": `deye_dummycloud_${loggerSerial}_grid_v`,
+                "object_id": `deye_dummycloud_${loggerSerial}_grid_va`,
+                "unique_id": `deye_dummycloud_${loggerSerial}_grid_va`,
                 "expire_after": 300,
                 "device": device
             }),
             {retain: true}
         );
+        
+        this.client.publish(
+            `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_grid_vb/config`,
+            JSON.stringify({
+                "state_topic": `${baseTopic}/grid/vb`,
+                "name":"Phase B Grid Voltage",
+                "unit_of_measurement": "V",
+                "device_class": "voltage",
+                "state_class": "measurement",
+                "object_id": `deye_dummycloud_${loggerSerial}_grid_vb`,
+                "unique_id": `deye_dummycloud_${loggerSerial}_grid_vb`,
+                "expire_after": 300,
+                "device": device
+            }),
+            {retain: true}
+        );
+        
+        this.client.publish(
+            `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_grid_vc/config`,
+            JSON.stringify({
+                "state_topic": `${baseTopic}/grid/vc`,
+                "name":"Phase C Grid Voltage",
+                "unit_of_measurement": "V",
+                "device_class": "voltage",
+                "state_class": "measurement",
+                "object_id": `deye_dummycloud_${loggerSerial}_grid_vc`,
+                "unique_id": `deye_dummycloud_${loggerSerial}_grid_vc`,
+                "expire_after": 300,
+                "device": device
+            }),
+            {retain: true}
+        );
+        
+        
+        
         this.client.publish(
             `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_grid_hz/config`,
             JSON.stringify({
@@ -271,22 +335,6 @@ class MqttClient {
                 "state_class": "measurement",
                 "object_id": `deye_dummycloud_${loggerSerial}_grid_hz`,
                 "unique_id": `deye_dummycloud_${loggerSerial}_grid_hz`,
-                "expire_after": 300,
-                "device": device
-            }),
-            {retain: true}
-        );
-
-        this.client.publish(
-            `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_inverter_radiator_temperature/config`,
-            JSON.stringify({
-                "state_topic": `${baseTopic}/inverter/radiator_temperature`,
-                "name":"Radiator Temperature",
-                "unit_of_measurement": "°C",
-                "device_class": "temperature",
-                "state_class": "measurement",
-                "object_id": `deye_dummycloud_${loggerSerial}_inverter_radiator_temperature`,
-                "unique_id": `deye_dummycloud_${loggerSerial}_inverter_radiator_temperature`,
                 "expire_after": 300,
                 "device": device
             }),

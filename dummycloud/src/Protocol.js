@@ -73,6 +73,7 @@ class Protocol {
         //TODO: there's a lot more in this packet
 
         return {
+            inverter_meta: { mppt_count : 2},
             frameType: packet.payload[0],
             sensorType: packet.payload[1],
             total_working_time: packet.payload.readUInt32BE(3),
@@ -170,8 +171,8 @@ class Protocol {
 			unkn115:packet.payload.readInt16BE(41+28+(115*2)),
 			unkn116:packet.payload.readInt16BE(41+28+(116*2)),
 			unkn117:packet.payload.readInt16BE(41+28+(117*2)),
-			unkn118:packet.payload.readInt16BE(41+28+(118*2)),
-			unkn119:packet.payload.readInt16BE(41+28+(119*2)),
+			pv1_in_power:packet.payload.readInt16BE(41+28+(118*2)),
+			pv2_in_power:packet.payload.readInt16BE(41+28+(119*2)),
 			unkn120:packet.payload.readInt16BE(41+28+(120*2)),
 			unkn121:packet.payload.readInt16BE(41+28+(121*2)),
 			pv1_volt:packet.payload.readInt16BE(41+28+(122*2))/10.0,
