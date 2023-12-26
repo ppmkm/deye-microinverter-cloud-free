@@ -232,8 +232,9 @@ class Protocol {
             Math.round(Date.now()/1000),
             13
         );
+        //???
         response.writeUint32LE(
-            0,
+            1,
             17
         );
 

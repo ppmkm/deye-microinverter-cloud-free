@@ -65,7 +65,11 @@ class MqttClient {
 		
         this.ensureAutoconf(data.header.loggerSerial.toString(), data.payload.inverter_meta.mppt_count);
         const baseTopic = `${MqttClient.TOPIC_PREFIX}/${data.header.loggerSerial.toString()}`;
-
+        
+        if (1 !== data.payload.frameType ) {
+           Logger.info("non 1 frame type: " + data.payload.frameType + "not publishing!!");
+           return;
+        }
             this.client.publish(`${baseTopic}/pv/1/v`, data.payload.pv1_volt.toString());
             this.client.publish(`${baseTopic}/pv/1/i`, data.payload.pv1_current.toString());
             this.client.publish(`${baseTopic}/pv/1/w`, data.payload.pv1_in_power.toString());
