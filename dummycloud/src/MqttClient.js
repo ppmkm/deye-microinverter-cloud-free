@@ -59,79 +59,113 @@ class MqttClient {
     handleHandshake(data) {
         // Nothing to see here
     }
+    
+    autopublish(data){
+       const baseTopic = `${MqttClient.TOPIC_PREFIX}/${data.header.loggerSerial.toString()}`;
+       const loggerSerial = data.header.loggerSerial.toString();
+       const device = {
+            "manufacturer":"Deye",
+            "model":"Hybrid3Phase",
+            "name":`Deye Hybrid Inverter ${loggerSerial}`,
+            "identifiers":[
+                `deye_dummycloud_${loggerSerial}`
+            ]
+        };
+       
+       for(const p in data.payload) {
+    //      Logger.trace(p, data.payload[p]);
+          var stateTopic = `${baseTopic}/${p}`;
+          this.client.publish(stateTopic,data.payload[p].toString());
+           var sensor = {
+                    "state_topic": stateTopic,
+                    "name": p,
+                    "unit_of_measurement": "q",
+                    "device_class": "devClass",
+                    "state_class": "stateClass",
+                    "object_id": `deye_dummycloud_${loggerSerial}_${p}`,
+                    "unique_id": `deye_dummycloud_${loggerSerial}_${p}`,
+                    "expire_after": 300,
+                    "enabled_by_default": true,
+                    "device": device
+                };               
+           if (p.endsWith("_V")) {
+                sensor.device_class = "voltage";
+                sensor.state_class = "measurement";
+                sensor.unit_of_measurement = "V";
+           } else if (p.endsWith("_A")) {
+                sensor.device_class = "current";
+                sensor.state_class = "measurement";
+                sensor.unit_of_measurement = "A";
+           } else if (p.endsWith("_W")) {
+                sensor.device_class = "power";
+                sensor.state_class = "measurement";
+                sensor.unit_of_measurement = "W";
+           } else if (p.endsWith("_kWh")) {
+                sensor.device_class = "energy";
+                sensor.state_class = "total_increasing";
+                sensor.unit_of_measurement = "kWh";
+           } else if (p.endsWith("_C")) {
+                sensor.device_class = "temperature";
+                sensor.state_class = "measurement";
+                sensor.unit_of_measurement = "\u00b0C";
+           } else if (p.endsWith("_Hz")) {
+                sensor.device_class = "frequency";
+                sensor.state_class = "measurement";
+                sensor.unit_of_measurement = "Hz";
+           } else if (p.endsWith("_pct")) {
+                sensor.device_class = "battery";
+                sensor.state_class = "measurement";
+                sensor.unit_of_measurement = "%";
+           } else {
+                continue;
+           }
+           this.client.publish(
+                `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_${p}/config`,
+                JSON.stringify(sensor),
+                {retain: true}
+            );
+        }
+	
+	
+	}
 
     handleData(data) {
-	
 		
         this.ensureAutoconf(data.header.loggerSerial.toString(), data.payload.inverter_meta.mppt_count);
         const baseTopic = `${MqttClient.TOPIC_PREFIX}/${data.header.loggerSerial.toString()}`;
         
+
         if (1 !== data.payload.frameType ) {
            Logger.info("non 1 frame type: " + data.payload.frameType + "not publishing!!");
            return;
         }
-            this.client.publish(`${baseTopic}/pv/1/v`, data.payload.pv1_volt.toString());
-            this.client.publish(`${baseTopic}/pv/1/i`, data.payload.pv1_current.toString());
-            this.client.publish(`${baseTopic}/pv/1/w`, data.payload.pv1_in_power.toString());
-            this.client.publish(`${baseTopic}/pv/2/v`, data.payload.pv2_volt.toString());
-            this.client.publish(`${baseTopic}/pv/2/i`, data.payload.pv2_current.toString());
-            this.client.publish(`${baseTopic}/pv/2/w`, data.payload.pv2_in_power.toString());
-            this.client.publish(`${baseTopic}/pv/kWh_total`, data.payload.total_from_pv.toString(),{retain: true});
-            this.client.publish(`${baseTopic}/pv/kWh_today`, data.payload.today_from_pv.toString(),{retain: true});
-            this.client.publish(`${baseTopic}/grid/active_power_w`, data.payload.grid_total_power_outg.toString());
-/*
-        for (let i = 1; i <= data.payload.inverter_meta.mppt_count; i++) {
-            this.client.publish(`${baseTopic}/pv/${i}/v`, data.payload.pv[`${i}`].v.toString());
-            this.client.publish(`${baseTopic}/pv/${i}/i`, data.payload.pv[`${i}`].i.toString());
-            this.client.publish(`${baseTopic}/pv/${i}/w`, data.payload.pv[`${i}`].w.toString());
-            this.client.publish(
-                `${baseTopic}/pv/${i}/kWh_today`,
-                data.payload.pv[`${i}`].kWh_today.toString(),
-                {retain: true}
-            );
+        this.autopublish(data);
+            this.client.publish(`${baseTopic}/pv/1/v`, data.payload.pv1_volt_V.toString());
+            this.client.publish(`${baseTopic}/pv/1/i`, data.payload.pv1_current_A.toString());
+            this.client.publish(`${baseTopic}/pv/1/w`, data.payload.pv1_in_power_W.toString());
+            this.client.publish(`${baseTopic}/pv/2/v`, data.payload.pv2_volt_V.toString());
+            this.client.publish(`${baseTopic}/pv/2/i`, data.payload.pv2_current_A.toString());
+            this.client.publish(`${baseTopic}/pv/2/w`, data.payload.pv2_in_power_W.toString());
+            this.client.publish(`${baseTopic}/pv/kWh_total`, data.payload.total_from_pv_kWh.toString(),{retain: true});
+            this.client.publish(`${baseTopic}/pv/kWh_today`, data.payload.today_from_pv_kWh.toString(),{retain: true});
+            this.client.publish(`${baseTopic}/grid/active_power_w`, data.payload.grid_total_power_outg_W.toString());
 
-            if (data.payload.pv[`${i}`].kWh_total > 0) {
-                this.client.publish(
-                    `${baseTopic}/pv/${i}/kWh_total`,
-                    data.payload.pv[`${i}`].kWh_total.toString(),
-                    {retain: true}
-                );
-            }
-        }
-*/
-//        this.client.publish(`${baseTopic}/grid/active_power_w`, data.payload.grid.active_power_w.toString());
         this.client.publish(
             `${baseTopic}/grid/kWh_today`,
-            data.payload.today_bought_from_grid.toString(),
+            data.payload.today_bought_from_grid_kWh.toString(),
             {retain: true}
         );
-/*
-        this.client.publish(
-            `${baseTopic}/grid/kWh_today`,
-            data.payload.grid.kWh_today.toString(),
-            {retain: true}
-        );
-*/
             this.client.publish(
                 `${baseTopic}/grid/kWh_total`,
-                data.payload.total_bought_from_grid.toString(),
+                data.payload.total_bought_from_grid_kWh.toString(),
                 {retain: true}
             );
 
-/*        
-        if (data.payload.grid.kWh_total > 0) {
-            this.client.publish(
-                `${baseTopic}/grid/kWh_total`,
-                data.payload.grid.kWh_total.toString(),
-                {retain: true}
-            );
-        }
-*/      
 
-        this.client.publish(`${baseTopic}/grid/va`, data.payload.grid_phasea_volt.toString());
-        this.client.publish(`${baseTopic}/grid/vb`, data.payload.grid_phaseb_volt.toString());
-        this.client.publish(`${baseTopic}/grid/vc`, data.payload.grid_phasec_volt.toString());
-        this.client.publish(`${baseTopic}/grid/hz`, data.payload.grid_freq.toString());
+        this.client.publish(`${baseTopic}/grid/va`, data.payload.grid_phasea_volt_V.toString());
+        this.client.publish(`${baseTopic}/grid/vb`, data.payload.grid_phaseb_volt_V.toString());
+        this.client.publish(`${baseTopic}/grid/vc`, data.payload.grid_phasec_volt_V.toString());
+        this.client.publish(`${baseTopic}/grid/hz`, data.payload.grid_freq_Hz.toString());
 /*
         this.client.publish(`${baseTopic}/inverter/radiator_temperature`, data.payload.inverter.radiator_temp_celsius.toString());
 */        
