@@ -84,7 +84,7 @@ class MqttClient {
                     "state_class": "stateClass",
                     "object_id": `deye_dummycloud_${loggerSerial}_${p}`,
                     "unique_id": `deye_dummycloud_${loggerSerial}_${p}`,
-                    "expire_after": 300,
+                    "expire_after": 450,
                     "enabled_by_default": true,
                     "device": device
                 };               
