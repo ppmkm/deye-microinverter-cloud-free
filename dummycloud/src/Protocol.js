@@ -72,7 +72,7 @@ class Protocol {
     static parseDataPacketPayload(packet) {
         //TODO: there's a lot more in this packet
 
-        return {
+        var retVal = {
             inverter_meta: { mppt_count : 2},
             frameType: packet.payload[0],
             sensorType: packet.payload[1],
@@ -196,6 +196,15 @@ class Protocol {
 			unkn144:packet.payload.readInt16BE(DATA_OFFSET+(144*2)),
             //for some reason everything after byte ~120 is all BE compared to the above?
         };
+	var intNo = 144
+	var off = DATA_OFFSET + (intNo * 2);
+	
+	while (off <= packet.payload.length-2) {
+		retVal["unkn"+intNo]=packet.payload.readInt16BE(off);
+		intNo+=1;
+	        off = DATA_OFFSET + (intNo * 2);
+	}
+	return retVal;
     }
 
     static parseLoggerPacketPayload(packet) {
