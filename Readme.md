@@ -16,6 +16,8 @@ You also won't have to share any e-mail address or phone number.
 So far, the following devices are known to work like this:
 
 - Deye SUN600G3-EU-230
+- Deye SUN-M80G3-EU-Q0
+- Deye SUN-M80G4-EU-Q0
 
 it should also be the same for other inverters of the same series including rebrands such as Bosswerk.<br/>
 If you have verified that it works with another device, feel free to extend this list.
@@ -30,6 +32,15 @@ Here are the main things you will want to know about these microinverters:
 - They can operate without an account
 - They can be monitored and controlled via their local ModbusTCP interface
 - You can also completely replace the cloud with a local implementation: [dummycloud](./dummycloud)
+
+**2024-08-20 Update**
+
+Deye has started rolling out firmware updates for the logger that block both ModbusTCP access and prevent the mock cloud
+from working due to the introduction of TLS. Fortunately, for now it seems that newly bought inverters still come with older
+logger firmwares that work offline.
+Also equally fortunately, it seems that downgrading the firmware is possible as well.
+
+However, both of these things may change in the future.
 
 ## Preamble
 
@@ -54,9 +65,6 @@ You don't want your home to burn down or anyone to be killed by a falling 1.5m²
 Electricity is dangerous. So are heavy things with a huge attack surface for wind.<br/>
 When in doubt, contact a local electrician. They know what they're doing and will help you.
 
-If people do stupid stuff with this technology, it **will become inaccessible** to every one of us, as there will be legislation preventing further idiot-induced injuries/harm, **ruining everything** for the vast majority of reasonable users.
-
-
 ## Setup
 
 Now with that out of the way, we can talk about what to do.
@@ -69,7 +77,7 @@ Alternatively, some people reported that they got the inverter to wake up by con
 ### Joining Wi-Fi
 
 By default, your microinverter should provide a Wi-Fi Access point with an SSID named similarly to `AP_4151234567`.
-Using a laptop, connect to that using the default AP password `12345678`.
+Using a laptop, connect to that using the password printed on the AP or for older inverters the default password `12345678`.
 
 In a browser, navigate to the IP of the inverter in that network which should by default be `http://10.10.100.254/`.
 Log in to the webinterface with the default credentials `admin:admin` and use that to configure Wi-Fi.
@@ -88,7 +96,7 @@ Now, expand the `Device Information` on the `Status` page and ensure that your l
 
 ![firmware version](img/firmware_version.png)
 
-Older firmwares don't allow reconfiguration of the Wi-Fi AP, which is a a serious vulnerability, as it allows an attacker to easily gain access to your real Wi-Fi credentials.
+Older firmwares don't allow reconfiguration of the Wi-Fi AP, which is a serious vulnerability, as it allows an attacker to easily gain access to your real Wi-Fi credentials.
 
 If your firmware is older, you can find firmware update files in this repo: [https://github.com/dasrecht/deye-firmware](https://github.com/dasrecht/deye-firmware).
 You can flash them using the `Upgrade Firmware` page of the webinterface.
@@ -343,36 +351,6 @@ Mine doesn't, however a [user fortunately posted a full response](https://www.ph
 | AT+NTPSER                                 | Set/Query Ntp Server.                                   |
 | AT+TXPWR                                  | Set/Get wifi rf tx power.                               |
 | AT+RFTESTMODE                             | RF test mode ON/OFF.                                    |
-
-</details>
-
-### Increasing the data logging interval
-
-The data reported by the logger actually isn't real-time but averaged and reported in a specific interval.
-By default, this interval is 5 minutes, meaning that even if you query the modbus registers every 30s,
-they will only contain new data after those 5 minutes have passed.
-
-Users of the cloud can contact the deye support to request a change of that interval to a different value.
-While this command was [captured and documented by a user](https://www.photovoltaikforum.com/thread/179529-daten-von-deye-sun-mikrowechselrichtern-abfangen/?postID=2844327#post2844327),
-it [unfortunately only seems to affect the data reported to the cloud](https://www.photovoltaikforum.com/thread/180129-deye-sun600-und-sun2000-erfahrungen/?postID=3116929#post3116929) and not
-the contents of the local modbus registers which still stick to the 5min interval :(
-
-Because of that, I've built a cloud replacement for these inverters that can be found in the dummycloud folder in this repo.
-
-<details>
-<summary>Click here to learn how to change that interval</summary>
-
-The interval can be controlled using the `AT+TIME` command.
-Sending just the command will respond with the current settings which by default are `5,60,120`.
-According to that forum post, those values mean:
-- 5 -> Data Uploading Period (5min)
-- 60 -> Data Acquisition Period (60s)
-- 120 -> Heart Rate (120s)
-
-To change this setting, the same AT command can be used if you know the magic number that serves as a password.
-You can fetch that by sending the `AT+KEY` command. By default, it seems to be `214028`.
-
-With the key acquired, sending `AT+TIME=214028,1,60,120` will then set the Data Uploading Period to 1min.
 
 </details>
 

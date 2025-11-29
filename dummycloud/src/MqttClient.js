@@ -4,7 +4,7 @@ const mqtt = require("mqtt");
 
 class MqttClient {
     /**
-     * 
+     *
      * @param {import("./DummyCloud")} dummyCloud
      */
     constructor(dummyCloud) {
@@ -37,6 +37,10 @@ class MqttClient {
             process.exit(1);
         }
 
+        if (process.env.MQTT_CHECK_CERT) {
+            options.rejectUnauthorized = (process.env.MQTT_CHECK_CERT !== "false");
+        }
+
         this.client = mqtt.connect(process.env.MQTT_BROKER_URL, options);
 
         this.client.on("connect", () => {
@@ -61,7 +65,7 @@ class MqttClient {
     }
 
     handleData(data) {
-        this.ensureAutoconf(data.header.loggerSerial.toString(), data.payload.inverter_meta.mppt_count);
+        this.ensureAutoconf(data.meta, data.header.loggerSerial.toString(), data.payload.inverter_meta.mppt_count);
         const baseTopic = `${MqttClient.TOPIC_PREFIX}/${data.header.loggerSerial.toString()}`;
 
         for (let i = 1; i <= data.payload.inverter_meta.mppt_count; i++) {
@@ -101,9 +105,16 @@ class MqttClient {
         this.client.publish(`${baseTopic}/grid/hz`, data.payload.grid.hz.toString());
 
         this.client.publish(`${baseTopic}/inverter/radiator_temperature`, data.payload.inverter.radiator_temp_celsius.toString());
+
+
+        const totalDcPower = Object.values(data.payload.pv).reduce((sum, pv) => sum + pv.w, 0);
+        const acPower = Math.abs(data.payload.grid.active_power_w);
+        const efficiency = totalDcPower > 0 && totalDcPower > acPower ? ((acPower / totalDcPower) * 100).toFixed(2) : "null";
+
+        this.client.publish(`${baseTopic}/inverter/efficiency`, efficiency);
     }
 
-    ensureAutoconf(loggerSerial, mpptCount) {
+    ensureAutoconf(meta, loggerSerial, mpptCount) {
         // (Re-)publish every 4 hours
         if (Date.now() - (this.autoconfTimestamps[loggerSerial] ?? 0) <= 4 * 60 * 60 * 1000) {
             return;
@@ -113,6 +124,7 @@ class MqttClient {
             "manufacturer":"Deye",
             "model":"Microinverter",
             "name":`Deye Microinverter ${loggerSerial}`,
+            "configuration_url": `http://${meta.remoteAddress}/index_cn.html`,
             "identifiers":[
                 `deye_dummycloud_${loggerSerial}`
             ]
@@ -129,7 +141,7 @@ class MqttClient {
                     "state_class": "measurement",
                     "object_id": `deye_dummycloud_${loggerSerial}_pv_${i}_v`,
                     "unique_id": `deye_dummycloud_${loggerSerial}_pv_${i}_v`,
-                    "expire_after": 300,
+                    "expire_after": 360,
                     "enabled_by_default": i < 3,
                     "device": device
                 }),
@@ -145,7 +157,7 @@ class MqttClient {
                     "state_class": "measurement",
                     "object_id": `deye_dummycloud_${loggerSerial}_pv_${i}_i`,
                     "unique_id": `deye_dummycloud_${loggerSerial}_pv_${i}_i`,
-                    "expire_after": 300,
+                    "expire_after": 360,
                     "enabled_by_default": i < 3,
                     "device": device
                 }),
@@ -161,7 +173,7 @@ class MqttClient {
                     "state_class": "measurement",
                     "object_id": `deye_dummycloud_${loggerSerial}_pv_${i}_w`,
                     "unique_id": `deye_dummycloud_${loggerSerial}_pv_${i}_w`,
-                    "expire_after": 300,
+                    "expire_after": 360,
                     "enabled_by_default": i < 3,
                     "device": device
                 }),
@@ -211,7 +223,7 @@ class MqttClient {
                 "state_class": "measurement",
                 "object_id": `deye_dummycloud_${loggerSerial}_grid_active_power_w`,
                 "unique_id": `deye_dummycloud_${loggerSerial}_grid_active_power_w`,
-                "expire_after": 300,
+                "expire_after": 360,
                 "device": device
             }),
             {retain: true}
@@ -254,7 +266,7 @@ class MqttClient {
                 "state_class": "measurement",
                 "object_id": `deye_dummycloud_${loggerSerial}_grid_v`,
                 "unique_id": `deye_dummycloud_${loggerSerial}_grid_v`,
-                "expire_after": 300,
+                "expire_after": 360,
                 "device": device
             }),
             {retain: true}
@@ -269,7 +281,7 @@ class MqttClient {
                 "state_class": "measurement",
                 "object_id": `deye_dummycloud_${loggerSerial}_grid_hz`,
                 "unique_id": `deye_dummycloud_${loggerSerial}_grid_hz`,
-                "expire_after": 300,
+                "expire_after": 360,
                 "device": device
             }),
             {retain: true}
@@ -285,12 +297,29 @@ class MqttClient {
                 "state_class": "measurement",
                 "object_id": `deye_dummycloud_${loggerSerial}_inverter_radiator_temperature`,
                 "unique_id": `deye_dummycloud_${loggerSerial}_inverter_radiator_temperature`,
-                "expire_after": 300,
+                "expire_after": 360,
                 "device": device
             }),
             {retain: true}
         );
 
+        this.client.publish(
+            `homeassistant/sensor/deye_dummycloud_${loggerSerial}/${loggerSerial}_inverter_efficiency/config`,
+            JSON.stringify({
+                "state_topic": `${baseTopic}/inverter/efficiency`,
+                "name":"Inverter Efficiency",
+                "unit_of_measurement": "%",
+                "entity_category": "diagnostic",
+                "icon": "mdi:cog-transfer",
+                "state_class": "measurement",
+                "object_id": `deye_dummycloud_${loggerSerial}_inverter_efficiency`,
+                "unique_id": `deye_dummycloud_${loggerSerial}_inverter_efficiency`,
+                "expire_after": 360,
+                "value_template": "{{ value_json }}",
+                "device": device
+            }),
+            {retain: true}
+        );
 
         this.autoconfTimestamps[loggerSerial] = Date.now();
     }

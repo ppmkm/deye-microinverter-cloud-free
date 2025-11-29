@@ -10,8 +10,13 @@ class DummyCloud {
     }
 
     initialize() {
-        this.server.listen(DummyCloud.PORT, function() {
-            Logger.info(`Starting deye-dummycloud on port ${DummyCloud.PORT}`);
+        this.server.listen(
+            {
+                port: DummyCloud.PORT,
+                host: "0.0.0.0"
+            }, 
+            function() {
+                Logger.info(`Starting deye-dummycloud on port ${DummyCloud.PORT}`);
         });
 
         this.server.on("connection", (socket) => {
@@ -28,8 +33,8 @@ class DummyCloud {
         Logger.info(`New connection from ${remoteAddress}`);
 
         socket.on("data", (data) => {
-            Logger.trace(new Date().toISOString(), `Data received from client: ${data.toString()}`);
-            Logger.trace(new Date().toISOString(), "Data", data.toString("hex"));
+            Logger.trace(new Date().toISOString(), `Data received from client ${remoteAddress}: ${data.toString()}`);
+            Logger.trace(new Date().toISOString(), `Data ${remoteAddress}:`, data.toString("hex"));
 
             try {
                 const packet = Protocol.parsePacket(data);
@@ -37,6 +42,21 @@ class DummyCloud {
 
                 switch (packet.header.type) {
                     case Protocol.MESSAGE_REQUEST_TYPES.HEARTBEAT: {
+                        response = Protocol.buildTimeResponse(packet);
+                        break;
+                    }
+                    case Protocol.MESSAGE_REQUEST_TYPES.WIFI: {
+                        /*
+                            There isn't much of interest in this packet
+                            It can contain the SSID or the Logger SN
+                            + Some counters increasing every second
+                            
+                            On connect, it also can contain the signal strength
+                            But that's about it
+                            
+                            The signal strength over time would've been interesting, but it only gets sent on connect
+                            With that, it's close to useless
+                         */
                         response = Protocol.buildTimeResponse(packet);
                         break;
                     }
@@ -55,11 +75,18 @@ class DummyCloud {
                     case Protocol.MESSAGE_REQUEST_TYPES.DATA: {
                         const data = Protocol.parseDataPacketPayload(packet);
 
-                        Logger.debug(`DATA packet data from ${remoteAddress}`, data);
-                        this.emitData({
-                            header: packet.header,
-                            payload: data
-                        });
+                        if (data) {
+                            Logger.debug(`DATA packet data from ${remoteAddress}`, data);
+                            this.emitData({
+                                header: packet.header,
+                                payload: data,
+                                meta: {
+                                    remoteAddress: remoteAddress
+                                }
+                            });
+                        } else {
+                            Logger.debug("Discarded data packet");
+                        }
 
                         response = Protocol.buildTimeResponse(packet);
                         break;

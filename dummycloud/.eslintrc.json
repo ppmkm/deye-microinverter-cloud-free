@@ -47,7 +47,6 @@
     "jsdoc/check-tag-names": "error",
     "jsdoc/check-types": "error",
     "jsdoc/implements-on-classes": "error",
-    "jsdoc/newline-after-description": "error",
     "jsdoc/no-undefined-types": "error",
     "jsdoc/require-param": "error",
     "jsdoc/require-param-name": "error",
@@ -70,7 +69,8 @@
     "no-multi-spaces": "off",
     "semi": "off",
     "quotes": "off",
-    "indent": "off"
+    "indent": "off",
+    "no-extra-boolean-cast": "off"
 
 
   }

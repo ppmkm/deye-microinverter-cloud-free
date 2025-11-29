@@ -69,6 +69,23 @@ class Protocol {
     }
 
     static parseDataPacketPayload(packet) {
+        switch (packet.payload[1]) {
+            case Protocol.DATA_PACKET_SCHEMAS.MICROINVERTER:
+                return Protocol.parseDataPacketMicroinverterPayload(packet);
+            default:
+                return null; //TODO: parse relay and string inverter packets
+        }
+
+
+    }
+
+    static parseDataPacketMicroinverterPayload(packet) {
+        if (!!(packet.payload[0] & 0b10000000)) {
+            // Seems to be one of these weird historic data packets from the SUN-M series. Ignoring for now
+            // TODO: understand what they mean and how they should be handled
+            return null;
+        }
+
         //TODO: there's a lot more in this packet
 
         return {
@@ -128,6 +145,7 @@ class Protocol {
             inverter_meta: {
                 rated_power_w: packet.payload.readUInt16BE(129) / 10,
                 mppt_count: packet.payload.readInt8(131),
+                phase_count: packet.payload.readInt8(132),
 
                 startup_self_check_time: packet.payload.readUInt16BE(243),
                 current_time: Protocol.parseTime(packet.payload.subarray(245, 251)),
@@ -206,7 +224,7 @@ class Protocol {
 Protocol.MESSAGE_REQUEST_TYPES = {
     HANDSHAKE: 0x41,
     DATA: 0x42,
-    // wifi info is 0x43?
+    WIFI: 0x43,
     HEARTBEAT: 0x47,
 };
 
@@ -215,6 +233,12 @@ Protocol.MESSAGE_RESPONSE_TYPES = {
     DATA: 0x12,
     // wifi info reply is 0x13?
     HEARTBEAT: 0x17,
+};
+
+Protocol.DATA_PACKET_SCHEMAS = {
+    MICROINVERTER: 0x08,
+    HYBRIDINVERTER: 0x11,
+    RELAYMODULE: 0x13
 };
 
 module.exports = Protocol;
